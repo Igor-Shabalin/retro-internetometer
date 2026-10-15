@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Интернетометр — замеры Яндекс Интернетометра</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#10141C;
+  --surface:#161C27;
+  --surface-2:#1D2531;
+  --line:#28313F;
+  --line-soft:#1F2833;
+  --text:#E4E9F2;
+  --text-dim:#8B96A8;
+  --text-faint:#5C687A;
+  --ok:#4FC08D;
+  --warn:#E8B84B;
+  --bad:#F2604C;
+  --yandex:#FC3F1D;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --r:6px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ok);outline-offset:2px;border-radius:3px}
+
+.topbar{position:sticky;top:0;z-index:40;background:rgba(16,20,28,.93);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar-inner{max-width:1520px;margin:0 auto;padding:0 20px;height:56px;
+  display:flex;align-items:center;gap:16px}
+.brand{display:flex;align-items:center;gap:11px;flex-shrink:0}
+.brand h1{font-size:16px;font-weight:600;margin:0;letter-spacing:-.01em}
+.src{display:inline-flex;align-items:baseline;gap:5px;text-decoration:none;
+  font-size:12px;color:var(--text-dim);white-space:nowrap;
+  padding:4px 10px 4px 9px;border-radius:var(--r);
+  background:rgba(252,63,29,.09);border:1px solid rgba(252,63,29,.32);
+  border-left:3px solid var(--yandex)}
+.src:hover{background:rgba(252,63,29,.16)}
+.src b{color:var(--yandex);font-weight:600;font-size:13px;letter-spacing:.01em}
+.chips{display:flex;gap:6px;flex:1;min-width:0;overflow:hidden}
+.chip{display:inline-flex;align-items:center;gap:7px;background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--r);padding:4px 10px;font-size:12.5px;
+  color:var(--text-dim);white-space:nowrap}
+.chip b{color:var(--text);font-weight:500}
+.chip .dot{width:7px;height:7px;border-radius:50%;background:var(--text-faint)}
+.chip .dot.ok{background:var(--ok)}.chip .dot.warn{background:var(--warn)}
+.chip .dot.bad{background:var(--bad)}
+.chip .dot.busy{background:var(--warn);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.3}}
+.chip.volt b{font-family:var(--mono)}
+.controls{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:2px}
+.seg button{background:none;border:0;padding:5px 11px;font-size:12.5px;color:var(--text-dim);
+  cursor:pointer;border-radius:4px}
+.seg button:hover{color:var(--text)}
+.seg button[aria-pressed="true"]{background:var(--surface-2);color:var(--text)}
+.act{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);
+  padding:6px 14px;font-size:13px;cursor:pointer}
+.act:hover:not(:disabled){background:#26303E}
+.act:disabled{opacity:.5;cursor:default}
+
+.page{max-width:1520px;margin:0 auto;padding:18px 20px 60px;display:flex;flex-direction:column;gap:14px}
+.row{display:grid;gap:14px}
+.row.tiles{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.row.split{grid-template-columns:1.35fr 1fr}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:11px 16px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.panel-head h2{margin:0;font-size:13px;font-weight:500}
+.panel-head .unit{font-size:12px;color:var(--text-faint);font-weight:400;margin-left:8px}
+.panel-body{padding:8px 8px 4px}
+.sub-head{padding:9px 16px 0;font-size:12px;color:var(--text-faint);
+  display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.sub-head .dir{font-family:var(--mono);font-size:11.5px;color:var(--text-dim)}
+
+.legend{display:flex;gap:3px;flex-wrap:wrap}
+.legend button{display:inline-flex;align-items:center;gap:7px;background:none;border:0;
+  padding:4px 9px;border-radius:4px;font-size:12.5px;color:var(--text-dim);cursor:pointer}
+.legend button:hover{background:var(--surface-2)}
+.legend button[aria-pressed="false"]{opacity:.38}
+.legend i{width:11px;height:3px;border-radius:2px;display:block;flex-shrink:0}
+.legend .v{font-family:var(--mono);color:var(--text);font-size:12.5px}
+
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%}
+.chart .cross{position:absolute;top:0;bottom:0;width:1px;background:var(--text-faint);
+  pointer-events:none;opacity:0;transition:opacity .1s}
+.tip{position:absolute;z-index:20;pointer-events:none;opacity:0;transition:opacity .1s;
+  background:#0B0F16;border:1px solid var(--line);border-radius:var(--r);padding:9px 11px;
+  font-size:12.5px;box-shadow:0 10px 28px rgba(0,0,0,.55);min-width:170px}
+.tip .t{color:var(--text-faint);margin-bottom:6px;font-size:11.5px}
+.tip .r{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-top:3px}
+.tip .r span{display:flex;align-items:center;gap:7px;color:var(--text-dim)}
+.tip .r i{width:9px;height:3px;border-radius:2px;flex-shrink:0}
+.tip .r b{font-family:var(--mono);font-weight:500}
+
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:12px 15px 10px;display:flex;flex-direction:column;min-width:0;
+  border-top:2px solid var(--line)}
+.tile .cap{font-size:12.5px;color:var(--text-dim);display:flex;justify-content:space-between;gap:8px}
+.tile .cap em{font-style:normal;font-size:11.5px;color:var(--text-faint)}
+.tile .pair{display:flex;align-items:flex-end;gap:16px;margin-top:2px}
+.tile .pair > div{min-width:0}
+.tile .num{font-family:var(--mono);font-size:26px;font-weight:500;letter-spacing:-.02em;line-height:1.2}
+.tile .num.up{font-size:19px;color:var(--text-dim)}
+.tile .num u{text-decoration:none;font-size:12px;color:var(--text-faint);margin-left:4px}
+.tile .dirlabel{font-size:10.5px;color:var(--text-faint);display:block}
+.tile .meta{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;
+  padding-top:8px;border-top:1px solid var(--line-soft)}
+.tile .meta div{min-width:0}
+.tile .meta b{display:block;font-family:var(--mono);font-size:13px;font-weight:400}
+.tile .meta small{font-size:10.5px;color:var(--text-faint)}
+.tile svg{display:block;width:100%;height:24px;margin-top:7px}
+.tile .num.dim{color:var(--text-faint)}
+
+.tablewrap{overflow-x:auto;max-height:420px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 14px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child,th.l,td.l{text-align:left}
+th{font-weight:500;color:var(--text-dim);font-size:12px;border-bottom:1px solid var(--line-soft);
+  position:sticky;top:0;background:var(--surface);z-index:2}
+td{border-bottom:1px solid var(--line-soft);font-family:var(--mono)}
+td.l{font-family:var(--sans);color:var(--text-dim)}
+tbody tr:hover td{background:var(--surface-2)}
+.ldot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:9px;vertical-align:0}
+
+.bench summary{cursor:pointer;padding:11px 16px;font-size:13px;color:var(--text-dim);
+  list-style:none;display:flex;align-items:center;gap:8px}
+.bench summary::-webkit-details-marker{display:none}
+.bench summary::before{content:"▸";color:var(--text-faint);font-size:11px}
+.bench[open] summary::before{content:"▾"}
+.bench summary:hover{color:var(--text)}
+.bench-body{padding:4px 16px 18px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;
+  border-top:1px solid var(--line-soft)}
+.bench-body .sl{display:flex;align-items:center;gap:14px;flex:1;min-width:270px;padding-top:14px}
+input[type=range]{flex:1;accent-color:var(--ok);height:22px}
+.voltnum{font-family:var(--mono);font-size:21px;min-width:5.5ch;text-align:right}
+.bench p{flex-basis:100%;margin:0;font-size:12.5px;color:var(--text-faint);max-width:80ch}
+.empty{padding:40px 16px;text-align:center;color:var(--text-faint);font-size:13px}
+
+@media (max-width:1080px){.row.split{grid-template-columns:1fr}}
+@media (max-width:760px){
+  .topbar-inner{height:auto;flex-wrap:wrap;padding:10px 14px;gap:10px}
+  .chips{order:3;flex-basis:100%;overflow-x:auto}
+  .page{padding:14px}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <h1>Интернетометр</h1>
+      <a class="src" href="https://yandex.ru/internet" target="_blank" rel="noopener">
+        замеры <b>Яндекс&nbsp;Интернетометра</b>
+      </a>
+    </div>
+    <div class="chips">
+      <span class="chip" id="chipStatus"><span class="dot"></span><span id="statusText">подключение</span></span>
+      <span class="chip" id="chipIsp" hidden><b id="ispText"></b></span>
+      <span class="chip" id="chipRegion" hidden><b id="regionText"></b></span>
+      <span class="chip volt" id="chipVolt" hidden>на вольтметре <b id="voltText"></b></span>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Период">
+        <button data-hours="3">3 ч</button>
+        <button data-hours="24" aria-pressed="true">24 ч</button>
+        <button data-hours="168">7 дн</button>
+        <button data-hours="720">30 дн</button>
+      </div>
+      <button class="act" id="btnTest">Измерить</button>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Скорость<span class="unit">Мбит/с</span></h2>
+      <div class="legend" id="speedLegend"></div>
+    </div>
+    <div class="sub-head">Входящая<span class="dir" id="dirDown"></span></div>
+    <div class="panel-body"><div class="chart" id="downChart"></div></div>
+    <div class="sub-head">Исходящая<span class="dir" id="dirUp"></span></div>
+    <div class="panel-body"><div class="chart" id="upChart"></div></div>
+  </section>
+
+  <section class="row tiles" id="tiles"></section>
+
+  <section class="row split">
+    <div class="panel">
+      <div class="panel-head"><h2>Задержка<span class="unit">мс</span></h2>
+        <div class="legend" id="pingLegend"></div></div>
+      <div class="panel-body"><div class="chart" id="pingChart"></div></div>
+    </div>
+
+    <div class="panel" id="wifiPanel" hidden>
+      <div class="panel-head"><h2>Эфир Wi-Fi</h2><div class="legend" id="wifiLegend"></div></div>
+      <div class="sub-head" id="airTitle">Занятость канала, %</div>
+      <div class="panel-body"><div class="chart" id="busyChart"></div></div>
+      <div class="sub-head">Уровень сигнала, дБм</div>
+      <div class="panel-body"><div class="chart" id="signalChart"></div></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Журнал замеров</h2><span class="unit" id="journalNote"></span></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th class="l">Время</th><th class="l">Канал</th><th>Входящая</th><th>Исходящая</th>
+          <th>Задержка</th><th>Сигнал</th><th>Канал Wi-Fi</th><th>Эфир</th>
+        </tr></thead>
+        <tbody id="journal"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <details class="panel bench">
+    <summary>Наладка вольтметра</summary>
+    <div class="bench-body">
+      <div class="sl">
+        <input type="range" id="volt" min="0" max="3" step="0.01" value="0" aria-label="Напряжение">
+        <span class="voltnum" id="voltRead">0,00 В</span>
+      </div>
+      <button class="act" id="btnSweep">Прогнать стрелку</button>
+      <button class="act" id="btnAuto">Вернуть автоматику</button>
+      <p id="benchHint">Ползунок подаёт напряжение напрямую, минуя автоматику.</p>
+    </div>
+  </details>
+</main>
+
+<script>
+(() => {
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const SVGNS = "http://www.w3.org/2000/svg";
+const isNum = (v) => typeof v === "number" && !Number.isNaN(v);
+
+const nf = (v, d = 1) => isNum(v)
+  ? v.toLocaleString("ru-RU", {minimumFractionDigits: d, maximumFractionDigits: d}) : "—";
+const ni = (v) => isNum(v) ? Math.round(v).toLocaleString("ru-RU") : "—";
+
+function el(tag, attrs = {}, text) {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  if (text !== undefined) n.textContent = text;
+  return n;
+}
+const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+const fmtAxis = (ts, hours) => {
+  const d = new Date(ts * 1000);
+  return hours > 72 ? d.toLocaleDateString("ru-RU", {day: "2-digit", month: "short"})
+                    : d.toLocaleTimeString("ru-RU", {hour: "2-digit", minute: "2-digit"});
+};
+const fmtFull = (ts) => new Date(ts * 1000)
+  .toLocaleString("ru-RU", {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
+
+// =================================================================== график
+
+function makeChart(hostId, opts = {}) {
+  const host = $(hostId);
+  const height = opts.height || 250;
+  const pad = {t: 14, r: opts.lastTag === false ? 16 : 56, b: 26, l: 52};
+  host.style.height = height + "px";
+
+  const cross = document.createElement("div"); cross.className = "cross";
+  const tip = document.createElement("div"); tip.className = "tip";
+  host.append(cross, tip);
+
+  const st = {series: [], hours: 24, marks: [], hidden: new Set(), scale: null,
+              range: opts.range || null};
+
+  const niceCeil = (v) => {
+    if (v <= 0) return 1;
+    const mag = Math.pow(10, Math.floor(Math.log10(v)));
+    for (const m of [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 7.5, 10]) if (v <= mag * m) return mag * m;
+    return mag * 10;
+  };
+
+  function bounds(active) {
+    let hi = -Infinity, lo = Infinity;
+    for (const s of active) for (const p of s.points) {
+      if (!isNum(p.v)) continue;
+      hi = Math.max(hi, p.v); lo = Math.min(lo, p.v);
+    }
+    if (hi === -Infinity) return [0, 1];
+    if (st.range || opts.range) return st.range || opts.range;
+    if (lo < 0) {                       // шкала сигнала уходит в минус
+      const top = Math.ceil(hi / 10) * 10 + 5;
+      const bottom = Math.floor(lo / 10) * 10 - 5;
+      return [bottom, top];
+    }
+    return [0, niceCeil(hi * 1.12) || 1];
+  }
+
+  function render() {
+    const width = Math.max(300, host.clientWidth);
+    host.querySelector("svg")?.remove();
+    const root = el("svg", {viewBox: `0 0 ${width} ${height}`, width, height});
+    const plotW = width - pad.l - pad.r, plotH = height - pad.t - pad.b;
+    const now = Math.floor(Date.now() / 1000), t0 = now - st.hours * 3600;
+    const active = st.series.filter((s) => !st.hidden.has(s.key));
+    const [yLo, yHi] = bounds(active);
+
+    const X = (ts) => pad.l + clamp((ts - t0) / (now - t0), 0, 1) * plotW;
+    const Y = (v) => pad.t + (1 - clamp((v - yLo) / (yHi - yLo || 1), 0, 1)) * plotH;
+    st.scale = {X, Y, t0, now};
+
+    for (let i = 0; i <= 4; i++) {
+      const v = yLo + ((yHi - yLo) / 4) * i, y = Math.round(Y(v)) + 0.5;
+      root.append(el("line", {x1: pad.l, y1: y, x2: pad.l + plotW, y2: y,
+        stroke: css("--line-soft"), "stroke-width": 1}));
+      root.append(el("text", {x: pad.l - 10, y: y + 4, "text-anchor": "end", fill: css("--text-faint"),
+        "font-size": 11, "font-family": "IBM Plex Mono, monospace"},
+        opts.yFormat ? opts.yFormat(v) : ni(v)));
+    }
+
+    const xn = width < 620 ? 4 : 7;
+    for (let i = 0; i <= xn; i++) {
+      const ts = t0 + ((now - t0) / xn) * i, x = Math.round(X(ts)) + 0.5;
+      if (i > 0 && i < xn) root.append(el("line", {x1: x, y1: pad.t, x2: x, y2: pad.t + plotH,
+        stroke: css("--line-soft"), "stroke-width": 1, opacity: .55}));
+      root.append(el("text", {x, y: height - 8,
+        "text-anchor": i === 0 ? "start" : i === xn ? "end" : "middle",
+        fill: css("--text-faint"), "font-size": 11}, fmtAxis(ts, st.hours)));
+    }
+
+    for (const ref of (opts.refs ? opts.refs() : [])) {
+      if (ref.value <= yLo || ref.value >= yHi) continue;
+      const y = Math.round(Y(ref.value)) + 0.5;
+      root.append(el("line", {x1: pad.l, y1: y, x2: pad.l + plotW, y2: y, stroke: ref.color,
+        "stroke-width": 1, "stroke-dasharray": "3 5", opacity: .45}));
+    }
+
+    for (const ts of st.marks) {
+      if (ts < t0) continue;
+      root.append(el("line", {x1: X(ts), y1: pad.t, x2: X(ts), y2: pad.t + plotH,
+        stroke: css("--bad"), "stroke-width": 1.5, opacity: .28}));
+    }
+
+    if (!active.some((s) => s.points.some((p) => isNum(p.v)))) {
+      root.append(el("text", {x: width / 2, y: height / 2, "text-anchor": "middle",
+        fill: css("--text-faint"), "font-size": 13}, "Данных за период нет"));
+      host.append(root);
+      return;
+    }
+
+    const defs = el("defs");
+    for (const s of active) {
+      const runs = []; let run = [];
+      for (const p of s.points) {
+        if (isNum(p.v) && p.ts >= t0) run.push(p);
+        else if (run.length) { runs.push(run); run = []; }
+      }
+      if (run.length) runs.push(run);
+      if (!runs.length) continue;
+
+      if (opts.fill) {
+        const g = el("linearGradient", {id: `f-${hostId}-${s.key}`, x1: 0, y1: 0, x2: 0, y2: 1});
+        g.append(el("stop", {offset: "0", "stop-color": s.color, "stop-opacity": ".20"}),
+                 el("stop", {offset: "1", "stop-color": s.color, "stop-opacity": "0"}));
+        defs.append(g);
+        for (const r of runs) {
+          if (r.length < 2) continue;
+          const base = (pad.t + plotH).toFixed(1);
+          const d = r.map((p, i) => `${i ? "L" : "M"} ${X(p.ts).toFixed(1)} ${Y(p.v).toFixed(1)}`).join(" ")
+            + ` L ${X(r[r.length - 1].ts).toFixed(1)} ${base} L ${X(r[0].ts).toFixed(1)} ${base} Z`;
+          root.append(el("path", {d, fill: `url(#f-${hostId}-${s.key})`}));
+        }
+      }
+
+      for (const r of runs) {
+        if (r.length === 1) {
+          root.append(el("circle", {cx: X(r[0].ts), cy: Y(r[0].v), r: 2.2, fill: s.color}));
+          continue;
+        }
+        const d = r.map((p, i) => `${i ? "L" : "M"} ${X(p.ts).toFixed(1)} ${Y(p.v).toFixed(1)}`).join(" ");
+        root.append(el("path", {d, fill: "none", stroke: s.color, "stroke-width": s.width || 1.8,
+          "stroke-linejoin": "round", "stroke-linecap": "round"}));
+      }
+
+      if (opts.lastTag !== false) {
+        const last = [...s.points].reverse().find((p) => isNum(p.v) && p.ts >= t0);
+        if (last) {
+          const y = clamp(Y(last.v), pad.t + 9, pad.t + plotH - 1);
+          root.append(el("circle", {cx: X(last.ts), cy: Y(last.v), r: 3, fill: s.color}));
+          root.append(el("rect", {x: pad.l + plotW + 4, y: y - 9, width: pad.r - 8, height: 18,
+            rx: 3, fill: s.color, opacity: .16}));
+          root.append(el("text", {x: pad.l + plotW + 8, y: y + 4, fill: s.color, "font-size": 11.5,
+            "font-family": "IBM Plex Mono, monospace"},
+            opts.yFormat ? opts.yFormat(last.v) : nf(last.v)));
+        }
+      }
+    }
+    root.append(defs);
+    host.append(root);
+  }
+
+  host.addEventListener("mousemove", (e) => {
+    if (!st.scale) return;
+    const rect = host.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const target = st.scale.t0 + (x - 52) / Math.max(1, host.clientWidth - 52 - 16)
+      * (st.scale.now - st.scale.t0);
+
+    let rows = "", found = false;
+    for (const s of st.series) {
+      if (st.hidden.has(s.key)) continue;
+      let best = null, dist = Infinity;
+      for (const p of s.points) {
+        const d = Math.abs(p.ts - target);
+        if (d < dist) { dist = d; best = p; }
+      }
+      if (!best || dist > (st.hours * 3600) / 40) continue;
+      found = true;
+      rows += `<div class="r"><span><i style="background:${s.color}"></i>${s.label}</span>` +
+              `<b style="color:${isNum(best.v) ? "var(--text)" : "var(--bad)"}">` +
+              `${isNum(best.v) ? (opts.yFormat ? opts.yFormat(best.v) : nf(best.v)) : "нет данных"}</b></div>`;
+    }
+    if (!found) { cross.style.opacity = 0; tip.style.opacity = 0; return; }
+
+    const px = st.scale.X(target);
+    cross.style.left = px + "px"; cross.style.opacity = 1;
+    tip.innerHTML = `<div class="t">${fmtFull(target)}</div>${rows}`;
+    tip.style.opacity = 1;
+    tip.style.left = clamp(px + 14, 4, host.clientWidth - tip.offsetWidth - 4) + "px";
+    tip.style.top = "16px";
+  });
+  host.addEventListener("mouseleave", () => { cross.style.opacity = 0; tip.style.opacity = 0; });
+
+  let t;
+  new ResizeObserver(() => { clearTimeout(t); t = setTimeout(render, 90); }).observe(host);
+
+  return {
+    update(series, hours, marks = []) { st.series = series; st.hours = hours; st.marks = marks; render(); },
+    toggle(key, on) { on ? st.hidden.delete(key) : st.hidden.add(key); render(); },
+    setRange(range) { st.range = range; },
+    hidden: st.hidden
+  };
+}
+
+function sparkline(node, tracks) {
+  // Обе скорости в одном масштабе, иначе слабую исходящую не с чем сравнить.
+  const w = 220, h = 24;
+  node.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  node.textContent = "";
+  const all = tracks.flatMap((t) => t.points).filter((p) => isNum(p.v));
+  if (all.length < 2) return;
+  const lo = Math.min(...all.map((p) => p.v)), hi = Math.max(...all.map((p) => p.v));
+  const span = hi - lo || 1;
+  const t0 = Math.min(...all.map((p) => p.ts)), t1 = Math.max(...all.map((p) => p.ts));
+  const X = (ts) => ((ts - t0) / (t1 - t0 || 1)) * w;
+  const Y = (v) => h - 2 - ((v - lo) / span) * (h - 5);
+  for (const track of tracks) {
+    const vals = track.points.filter((p) => isNum(p.v));
+    if (vals.length < 2) continue;
+    const d = vals.map((p, i) => `${i ? "L" : "M"} ${X(p.ts).toFixed(1)} ${Y(p.v).toFixed(1)}`).join(" ");
+    if (track.fill) node.append(el("path", {d: `${d} L ${w} ${h} L 0 ${h} Z`,
+      fill: track.color, opacity: .12}));
+    node.append(el("path", Object.assign({d, fill: "none", stroke: track.color,
+      "stroke-width": track.width || 1.4, "stroke-linejoin": "round", "stroke-linecap": "round",
+      opacity: track.opacity ?? 1},
+      track.dash ? {"stroke-dasharray": "3 2.5"} : {})));
+  }
+}
+
+// =================================================================== состояние
+
+let hours = 24;
+let links = [];
+let seriesData = {};
+let stats = {};
+let thresholds = {green: 70, yellow: 30};
+let demo = false;
+
+const downChart = makeChart("downChart", {
+  height: 215, fill: true,
+  refs: () => [{value: thresholds.green, color: css("--ok")},
+               {value: thresholds.yellow, color: css("--warn")}]
+});
+const upChart = makeChart("upChart", {height: 195, fill: true});
+const pingChart = makeChart("pingChart", {height: 210, yFormat: (v) => nf(v, v < 10 ? 1 : 0)});
+const busyChart = makeChart("busyChart", {height: 132, range: [0, 100],
+  yFormat: (v) => ni(v), lastTag: false});
+const signalChart = makeChart("signalChart", {height: 132, yFormat: (v) => ni(v), lastTag: false});
+
+async function api(path, options) {
+  const res = await fetch(path, Object.assign({headers: {"Content-Type": "application/json"}}, options));
+  if (!res.ok) throw new Error(res.status);
+  return res.json();
+}
+
+const rowsOf = (id) => seriesData[id] || [];
+const toSeries = (id, field) => rowsOf(id).map((r) => ({ts: r.ts, v: r.ok ? r[field] : null}));
+const linkById = (id) => links.find((l) => l.id === id) || {label: id, color: css("--text-dim")};
+
+function renderLegend(node, items, charts, valueOf) {
+  const list = Array.isArray(charts) ? charts : [charts];
+  node.textContent = "";
+  for (const it of items) {
+    const b = document.createElement("button");
+    b.dataset.key = it.key;
+    b.setAttribute("aria-pressed", String(!list[0].hidden.has(it.key)));
+    b.innerHTML = `<i style="background:${it.color}"></i>${it.label}` +
+      (valueOf ? `<span class="v">${valueOf(it)}</span>` : "");
+    b.addEventListener("click", () => {
+      const on = b.getAttribute("aria-pressed") !== "true";
+      b.setAttribute("aria-pressed", String(on));
+      for (const chart of list) chart.toggle(it.key, on);
+    });
+    node.append(b);
+  }
+}
+
+function lastOk(id) {
+  return [...rowsOf(id)].reverse().find((r) => r.ok && isNum(r.download)) || null;
+}
+
+function drawTiles() {
+  const host = $("tiles");
+  host.textContent = "";
+  for (const link of links) {
+    const rows = rowsOf(link.id);
+    const last = lastOk(link.id);
+    const st = stats[link.id] || {};
+    const tile = document.createElement("div");
+    tile.className = "tile";
+    tile.style.borderTopColor = link.color;
+
+    const airCell = isNum(last?.busy)
+      ? `<div><b>${nf(last.busy, 0)}%</b><small>эфир занят</small></div>`
+      : isNum(last?.neighbours)
+        ? `<div><b>${ni(last.neighbours)}</b><small>чужих сетей${
+             isNum(last.neighbours_near) ? `, ${ni(last.neighbours_near)} на канале` : ""}</small></div>`
+        : `<div><b>—</b><small>эфир занят</small></div>`;
+
+    const meta = link.wireless
+      ? `<div><b>${nf(last?.signal, 0)}</b><small>сигнал, дБм</small></div>
+         <div><b>${last?.channel ?? "—"}</b><small>канал ${last?.band ? last.band + " ГГц" : ""}</small></div>
+         ${airCell}`
+      : `<div><b>${nf(st.avg_down, 1)}</b><small>вх. среднее</small></div>
+         <div><b>${nf(st.avg_up, 1)}</b><small>исх. среднее</small></div>
+         <div><b>${nf(last?.ping, 2)}</b><small>пинг, мс</small></div>`;
+
+    tile.innerHTML =
+      `<span class="cap">${link.label}<em>${link.drives_meter ? "ведёт стрелку" : link.iface || ""}</em></span>` +
+      `<div class="pair">
+         <div><span class="num${last ? "" : " dim"}">${last ? nf(last.download, 2) : "—"}<u>Мбит/с</u></span>
+              <span class="dirlabel">входящая</span></div>
+         <div><span class="num up">${last ? nf(last.upload, 2) : "—"}</span>
+              <span class="dirlabel">исходящая</span></div>
+       </div>` +
+      `<div class="meta">${meta}</div><svg preserveAspectRatio="none"></svg>`;
+    host.append(tile);
+    sparkline(tile.querySelector("svg"), [
+      {points: rows.map((r) => ({ts: r.ts, v: r.ok ? r.download : null})),
+       color: link.color, width: 1.5, fill: true},
+      {points: rows.map((r) => ({ts: r.ts, v: r.ok ? r.upload : null})),
+       color: link.color, width: 1.1, opacity: .55, dash: true}
+    ]);
+  }
+}
+
+function drawCharts() {
+  const multi = links.length > 1;
+  const marks = [];
+  for (const link of links) for (const r of rowsOf(link.id)) if (!r.ok) marks.push(r.ts);
+
+  // Каждый канал — своя линия, и так на обоих графиках. Масштаб у них свой:
+  // исходящая обычно ниже входящей, на общей шкале её было бы не разглядеть.
+  const build = (field) => multi
+    ? links.map((l) => ({key: l.id, label: l.label, color: l.color,
+        width: l.drives_meter ? 2.2 : 1.8, points: toSeries(l.id, field)}))
+    : [{key: links[0]?.id || "default", label: links[0]?.label || "канал",
+        color: links[0]?.color || "#4CC9F0", width: 2.2,
+        points: toSeries(links[0]?.id, field)}];
+
+  const downSeries = build("download");
+  const upSeries = build("upload");
+  downChart.update(downSeries, hours, marks);
+  upChart.update(upSeries, hours, marks);
+
+  const legendItems = multi
+    ? links.map((l) => ({key: l.id, label: l.label, color: l.color}))
+    : [{key: links[0]?.id || "default", label: links[0]?.label || "канал",
+        color: links[0]?.color || "#4CC9F0"}];
+  renderLegend($("speedLegend"), legendItems, [downChart, upChart], (it) => {
+    const d = [...(downSeries.find((x) => x.key === it.key)?.points || [])]
+      .reverse().find((p) => isNum(p.v));
+    const u = [...(upSeries.find((x) => x.key === it.key)?.points || [])]
+      .reverse().find((p) => isNum(p.v));
+    return `${d ? nf(d.v, 1) : "—"} / ${u ? nf(u.v, 1) : "—"}`;
+  });
+
+  const lastOf = (series) => series
+    .map((s) => [...s.points].reverse().find((p) => isNum(p.v))?.v)
+    .filter(isNum);
+  const dLast = lastOf(downSeries), uLast = lastOf(upSeries);
+  $("dirDown").textContent = dLast.length ? `сейчас ${nf(Math.max(...dLast), 1)} Мбит/с` : "";
+  $("dirUp").textContent = uLast.length ? `сейчас ${nf(Math.max(...uLast), 1)} Мбит/с` : "";
+
+  const pingSeries = links.map((l) => ({key: l.id, label: l.label, color: l.color,
+    points: toSeries(l.id, "ping")}));
+  pingChart.update(pingSeries, hours, marks);
+  renderLegend($("pingLegend"), links.map((l) => ({key: l.id, label: l.label, color: l.color})),
+    pingChart);
+
+  const wireless = links.filter((l) => l.wireless);
+  $("wifiPanel").hidden = wireless.length === 0;
+  if (wireless.length) {
+    // Не все драйверы отдают счётчики занятости эфира. Если их нет,
+    // показываем число чужих сетей в диапазоне — оно есть всегда.
+    const hasBusy = wireless.some((l) => rowsOf(l.id).some((r) => isNum(r.busy)));
+    const field = hasBusy ? "busy" : "neighbours";
+    $("airTitle").textContent = hasBusy
+      ? "Занятость канала, %" : "Чужих сетей в диапазоне";
+    busyChart.setRange(hasBusy ? [0, 100] : null);
+    busyChart.update(wireless.map((l) => ({key: l.id, label: l.label, color: l.color,
+      points: toSeries(l.id, field)})), hours);
+    signalChart.update(wireless.map((l) => ({key: l.id, label: l.label, color: l.color,
+      points: toSeries(l.id, "signal")})), hours);
+    renderLegend($("wifiLegend"), wireless.map((l) => ({key: l.id, label: l.label, color: l.color})),
+      busyChart);
+  }
+}
+
+function drawJournal(rows) {
+  const body = $("journal");
+  body.textContent = "";
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="8" class="empty">Замеров пока нет. Нажмите «Измерить».</td></tr>`;
+    return;
+  }
+  for (const r of rows) {
+    const link = linkById(r.link || "default");
+    const tr = document.createElement("tr");
+    if (r.ok) {
+      tr.innerHTML =
+        `<td class="l">${fmtFull(r.ts)}</td>` +
+        `<td class="l"><span class="ldot" style="background:${link.color}"></span>${link.label}</td>` +
+        `<td>${nf(r.download, 2)}</td><td>${nf(r.upload, 2)}</td><td>${nf(r.ping, 2)}</td>` +
+        `<td>${isNum(r.signal) ? nf(r.signal, 0) : "—"}</td>` +
+        `<td>${r.channel ?? "—"}</td>` +
+        `<td>${isNum(r.busy) ? nf(r.busy, 0) + " %"
+              : isNum(r.neighbours) ? ni(r.neighbours) + " сетей" : "—"}</td>`;
+    } else {
+      tr.innerHTML =
+        `<td class="l">${fmtFull(r.ts)}</td>` +
+        `<td class="l"><span class="ldot" style="background:var(--bad)"></span>${link.label}</td>` +
+        `<td class="l" colspan="6" style="color:var(--bad)">${(r.error || "замер не удался").slice(0, 110)}</td>`;
+    }
+    body.append(tr);
+  }
+}
+
+function paintState(state) {
+  thresholds = {
+    green: state.config?.green_min ?? thresholds.green,
+    yellow: state.config?.yellow_min ?? thresholds.yellow
+  };
+  if (state.links) {
+    links = state.links.map((l, i) => ({...l,
+      color: l.color || ["#4CC9F0", "#FF9F4A", "#9B8CFF", "#4FC08D"][i % 4]}));
+  }
+
+  const dot = $("chipStatus").querySelector(".dot");
+  dot.className = "dot " + (demo ? "" : state.status === "testing" ? "busy"
+    : state.zone === "green" ? "ok" : state.zone === "yellow" ? "warn"
+    : state.zone === "red" ? "bad" : "");
+  $("statusText").textContent = demo ? "демонстрационные данные"
+    : state.status === "testing" ? (state.note || "идёт замер") : "на связи";
+
+  const show = (chip, text, value) => {
+    $(chip).hidden = !value;
+    if (value) $(text).textContent = value;
+  };
+  const latest = state.latest;
+  show("chipIsp", "ispText", latest ? [latest.isp, latest.asn].filter(Boolean).join(" ") : null);
+  show("chipRegion", "regionText", latest?.region);
+  show("chipVolt", "voltText", isNum(state.meter?.target_voltage)
+    ? nf(state.meter.target_voltage, 2) + " В" : null);
+
+  $("btnTest").disabled = demo || state.status === "testing";
+  $("btnTest").textContent = state.status === "testing" ? "Измеряю…" : "Измерить";
+
+  const scale = state.meter?.full_scale_mbps;
+  if (scale) $("benchHint").textContent =
+    `Ползунок подаёт напряжение напрямую, минуя автоматику. Полная шкала — ${ni(scale)} Мбит/с, ` +
+    `стрелку ведёт канал «${linkById(state.meter_link).label}». ` +
+    `Если 3,00 В не даёт упор, поправьте calibration_gain в config.json.`;
+}
+
+// =================================================================== демо
+
+function demoData() {
+  const now = Math.floor(Date.now() / 1000);
+  const defs = [
+    {id: "eth0", label: "Ethernet", iface: "eth0", color: "#4CC9F0", wireless: false, drives_meter: true, base: 91, upK: .99},
+    {id: "wlan0", label: "Wi-Fi 5 ГГц", iface: "wlan0", color: "#FF9F4A", wireless: true, drives_meter: false, base: 72, upK: .72, sig: -45, ch: 36, band: "5", busy: 9},
+    {id: "wlan1", label: "Wi-Fi 2,4 ГГц", iface: "wlan1", color: "#9B8CFF", wireless: true, drives_meter: false, base: 34, upK: .48, sig: -67, ch: 6, band: "2.4", busy: 45}
+  ];
+  const out = {};
+  const total = Math.min(900, Math.round(hours * 12));
+  for (const d of defs) {
+    const rows = [];
+    for (let i = total; i >= 0; i--) {
+      const ts = now - i * 300;
+      const hour = new Date(ts * 1000).getHours();
+      const rush = hour >= 19 && hour <= 23;
+      // вечером эфир 2,4 ГГц забивают соседи, и скорость падает следом
+      const busy = d.busy != null
+        ? clamp(d.busy * (rush ? (d.id === "wlan1" ? 1.9 : 1.25) : 1) + Math.random() * 8, 2, 96) : null;
+      const drop = busy != null ? clamp(1 - (busy - 15) / 130, .28, 1) : 1;
+      const fail = Math.random() < 0.006;
+      const down = clamp(d.base * drop + (Math.random() - .5) * 5, 1, 110);
+      rows.push({ts, ok: fail ? 0 : 1, link: d.id,
+        download: fail ? null : Math.round(down * 100) / 100,
+        upload: fail ? null : Math.round(down * d.upK * (.94 + Math.random() * .12) * 100) / 100,
+        ping: fail ? null : Math.round((d.wireless ? 3 + (busy / 20) : 1.3) * (.8 + Math.random() * .5) * 100) / 100,
+        signal: d.sig != null ? Math.round(d.sig + (rush ? -3 : 0) + (Math.random() - .5) * 4) : null,
+        busy: busy != null ? Math.round(busy) : null,
+        channel: d.ch ?? null, band: d.band ?? null,
+        isp: "Демо-провайдер", asn: "AS00000", region: "Демо-регион",
+        voltage: fail ? null : Math.round(down / 100 * 3 * 1000) / 1000,
+        error: fail ? "клиент не ответил" : null});
+    }
+    out[d.id] = rows;
+  }
+  return {defs, out};
+}
+
+function enterDemo() {
+  if (demo) return;
+  demo = true;
+  const {defs, out} = demoData();
+  links = defs.map(({id, label, iface, color, wireless, drives_meter}) =>
+    ({id, label, iface, color, wireless, drives_meter}));
+  seriesData = out;
+  stats = {};
+  for (const l of links) {
+    const good = out[l.id].filter((r) => r.ok);
+    stats[l.id] = {
+      avg_down: good.reduce((a, r) => a + r.download, 0) / (good.length || 1),
+      max_down: Math.max(...good.map((r) => r.download)),
+      avg_up: good.reduce((a, r) => a + r.upload, 0) / (good.length || 1),
+      max_up: Math.max(...good.map((r) => r.upload))
+    };
+  }
+  const last = lastOk("eth0");
+  paintState({status: "idle", zone: "green", latest: last, links, meter_link: "eth0",
+    meter: {target_voltage: last.voltage, full_scale_mbps: 100},
+    config: {green_min: 70, yellow_min: 30}});
+  drawCharts(); drawTiles();
+  const all = Object.values(out).flat().sort((a, b) => b.ts - a.ts).slice(0, 30);
+  drawJournal(all);
+  $("journalNote").textContent = "сервер недоступен, показаны демонстрационные данные";
+}
+
+// =================================================================== обновление
+
+async function refreshState() {
+  try {
+    const state = await api("/api/state");
+    if (demo) { demo = false; $("journalNote").textContent = ""; await refreshHistory(); }
+    paintState(state);
+  } catch (e) { enterDemo(); }
+}
+
+async function refreshHistory() {
+  if (demo) { const {out} = demoData(); seriesData = out; drawCharts(); drawTiles(); return; }
+  try {
+    const data = await api(`/api/history?hours=${hours}`);
+    if (data.links) links = data.links.map((l, i) => ({...l,
+      color: l.color || ["#4CC9F0", "#FF9F4A", "#9B8CFF", "#4FC08D"][i % 4]}));
+    seriesData = data.series || {};
+    stats = data.stats || {};
+    drawCharts();
+    drawTiles();
+    const journal = await api("/api/journal?limit=40");
+    drawJournal(journal.rows);
+  } catch (e) { /* следующий цикл */ }
+}
+
+// =================================================================== управление
+
+for (const b of document.querySelectorAll(".seg[role=group][aria-label=Период] button")) {
+  b.addEventListener("click", () => {
+    document.querySelectorAll(".seg[aria-label=Период] button")
+      .forEach((x) => x.removeAttribute("aria-pressed"));
+    b.setAttribute("aria-pressed", "true");
+    hours = Number(b.dataset.hours);
+    refreshHistory();
+  });
+}
+$("btnTest").addEventListener("click", async () => {
+  $("btnTest").disabled = true;
+  try { await api("/api/test", {method: "POST", body: "{}"}); } catch (e) {}
+  setTimeout(refreshState, 400);
+});
+$("btnSweep").addEventListener("click", () =>
+  api("/api/sweep", {method: "POST", body: "{}"}).catch(() => {}));
+$("btnAuto").addEventListener("click", () => {
+  api("/api/meter", {method: "POST", body: JSON.stringify({mode: "auto"})}).catch(() => {});
+  setTimeout(refreshState, 300);
+});
+$("volt").addEventListener("input", () =>
+  $("voltRead").textContent = parseFloat($("volt").value).toFixed(2).replace(".", ",") + " В");
+$("volt").addEventListener("change", () =>
+  api("/api/meter", {method: "POST", body: JSON.stringify({voltage: parseFloat($("volt").value)})})
+    .catch(() => {}));
+
+refreshState().then(refreshHistory);
+setInterval(refreshState, 2000);
+setInterval(refreshHistory, 30000);
+})();
+</script>
+</body>
+</html>

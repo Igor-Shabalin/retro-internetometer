@@ -1,0 +1,23 @@
+[Unit]
+Description=Интернетометр — стрелочный указатель скорости интернета
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/internetometer
+ExecStart=/usr/bin/python3 /home/pi/internetometer/internetometer.py
+Environment=PYTHONUNBUFFERED=1
+# На Raspberry Pi 5 оставьте lgpio. На Pi 3/4 можно поставить pigpio
+# (sudo apt install pigpio && sudo systemctl enable --now pigpiod)
+# и заменить строку на: Environment=GPIOZERO_PIN_FACTORY=pigpio
+Environment=GPIOZERO_PIN_FACTORY=lgpio
+Restart=on-failure
+RestartSec=10
+# Даём время свести стрелку на ноль при остановке
+TimeoutStopSec=15
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target

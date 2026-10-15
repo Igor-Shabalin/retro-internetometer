@@ -1,0 +1,79 @@
+{
+  "interval_minutes": 10,
+  "http_port": 8080,
+  "http_host": "0.0.0.0",
+  "database": "internetometer.db",
+  "title": "Интернетометр",
+  "subtitle": "Провод и два диапазона Wi-Fi",
+  "interfaces": [
+    {
+      "id": "eth",
+      "label": "Ethernet",
+      "iface": "eth0",
+      "mode": "route",
+      "color": "#4CC9F0",
+      "drives_meter": true
+    },
+    {
+      "id": "usb5",
+      "label": "Wi-Fi 5 ГГц",
+      "iface": "wlan0",
+      "mode": "switch",
+      "connection": "МОЯ-СЕТЬ-5G",
+      "wireless": true,
+      "wait_seconds": 40,
+      "settle_seconds": 8,
+      "busy_window_seconds": 8,
+      "color": "#FF9F4A"
+    },
+    {
+      "id": "usb24",
+      "label": "Wi-Fi 2,4 ГГц",
+      "iface": "wlan0",
+      "mode": "switch",
+      "connection": "МОЯ-СЕТЬ-2G",
+      "wireless": true,
+      "wait_seconds": 40,
+      "settle_seconds": 8,
+      "busy_window_seconds": 8,
+      "color": "#4ADE80"
+    }
+  ],
+  "meter": {
+    "gpio_pwm": 18,
+    "pwm_frequency_hz": 1000,
+    "supply_voltage": 3.3,
+    "full_scale_voltage": 3.0,
+    "full_scale_mbps": 1000,
+    "scale_divisions": 150,
+    "scale": "linear",
+    "source": "download",
+    "source_interface": "eth",
+    "calibration_gain": 1.0,
+    "zero_duty": 0.0,
+    "max_duty": 0.98,
+    "needle_ramp_seconds": 2.5,
+    "sweep_on_start": true
+  },
+  "leds": {
+    "green_gpio": 17,
+    "yellow_gpio": 27,
+    "red_gpio": 22,
+    "activity_gpio": null,
+    "active_high": true,
+    "green_min_mbps": 500,
+    "yellow_min_mbps": 150
+  },
+  "yandex": {
+    "binary": "internetometer",
+    "args": [
+      "--all",
+      "--json",
+      "--lang",
+      "ru"
+    ],
+    "concurrency": 2,
+    "timeout_seconds": 240,
+    "custom_command": ""
+  }
+}

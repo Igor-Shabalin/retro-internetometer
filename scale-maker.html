@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Шкала в мегабитах — печать 1:1</title>
+<link href="https://fonts.googleapis.com/css2?family=PT+Sans+Narrow:wght@400;700&family=PT+Sans&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#15100C;--bakelite:#241C15;--edge:#3E3125;--engrave:#DBC99C;--dim:#8E7C5B;--oak:#A9784A}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--engrave);font-family:"PT Sans",system-ui,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:26px 20px 60px}
+h1{font-family:"PT Sans Narrow",sans-serif;letter-spacing:.2em;font-size:30px;margin:0 0 6px}
+p.lead{color:var(--dim);max-width:64ch;margin:0 0 22px}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px 20px;
+  border:1px solid var(--edge);background:linear-gradient(180deg,#2A2118,#1C1610);padding:18px}
+label{display:block;font-family:"PT Sans Narrow",sans-serif;letter-spacing:.08em;font-size:14px;color:var(--dim);margin-bottom:5px}
+input,select{width:100%;background:#15100C;border:1px solid var(--edge);color:var(--engrave);
+  padding:8px 10px;font-family:"PT Sans",sans-serif;font-size:15px}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--oak);outline-offset:2px}
+.btns{display:flex;gap:10px;margin:18px 0 22px;flex-wrap:wrap}
+button{font-family:"PT Sans Narrow",sans-serif;letter-spacing:.1em;font-size:16px;color:var(--engrave);
+  background:linear-gradient(180deg,#3A2E22,#231A12);border:1px solid #4E3C2A;padding:11px 20px;cursor:pointer}
+button.go{background:linear-gradient(180deg,#6E4A29,#4A3018);border-color:#7E5A34}
+.stage{background:#5A4632;padding:22px;border:1px solid #4E3520;overflow:auto}
+.note{color:var(--dim);font-size:14px;margin-top:16px;max-width:70ch}
+@media print{
+  body{background:#fff}
+  .wrap{padding:0;max-width:none}
+  h1,p.lead,.controls,.btns,.note{display:none}
+  .stage{background:#fff;padding:0;border:0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ШКАЛА В МЕГАБИТАХ</h1>
+  <p class="lead">Обмерьте родной циферблат линейкой, введите размеры и напечатайте лист без масштабирования
+    (в диалоге печати — «Реальный размер», 100 %). Готовую шкалу можно подложить под стекло поверх старой.</p>
+
+  <div class="controls">
+    <div><label for="w">Ширина эмали, мм</label><input id="w" type="number" value="120" step="0.5"></div>
+    <div><label for="h">Высота эмали, мм</label><input id="h" type="number" value="62" step="0.5"></div>
+    <div><label for="r">Радиус дуги, мм</label><input id="r" type="number" value="58" step="0.5"></div>
+    <div><label for="pivot">Ось ниже низа шкалы, мм</label><input id="pivot" type="number" value="18" step="0.5"></div>
+    <div><label for="span">Размах стрелки, градусов</label><input id="span" type="number" value="78" step="1"></div>
+    <div><label for="max">Максимум, Мбит/с</label><input id="max" type="number" value="100" step="10"></div>
+    <div><label for="step">Шаг подписей, Мбит/с</label><input id="step" type="number" value="10" step="5"></div>
+    <div><label for="warn">Жёлтая зона от, Мбит/с</label><input id="warn" type="number" value="30" step="5"></div>
+    <div><label for="good">Зелёная зона от, Мбит/с</label><input id="good" type="number" value="70" step="5"></div>
+    <div><label for="caption">Надпись под шкалой</label><input id="caption" type="text" value="МЕГАБИТ В СЕКУНДУ"></div>
+    <div><label for="zones">Цветные зоны</label>
+      <select id="zones"><option value="1">показать</option><option value="0">без них</option></select></div>
+  </div>
+
+  <div class="btns">
+    <button class="go" id="draw">Перерисовать</button>
+    <button id="print">Напечатать</button>
+    <button id="save">Сохранить SVG</button>
+  </div>
+
+  <div class="stage"><div id="out"></div></div>
+
+  <p class="note">Пороги зон задайте те же, что у светодиодов в config.json.
+    Если стрелка вашего прибора качается не на 78°, поставьте её на ноль и на упор, замерьте угол транспортиром
+    и впишите сюда.</p>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = (id) => document.getElementById(id);
+const SVGNS = "http://www.w3.org/2000/svg";
+const num = (id) => parseFloat($(id).value);
+
+function draw() {
+  const W = num("w"), H = num("h"), R = num("r"), pivotBelow = num("pivot");
+  const span = num("span") / 2, maxV = num("max"), labelStep = num("step");
+  const showZones = $("zones").value === "1";
+
+  const cx = W / 2, cy = H + pivotBelow;
+  const pt = (f, rad) => {
+    const a = (-span + f * 2 * span) * Math.PI / 180;
+    return [cx + rad * Math.sin(a), cy - rad * Math.cos(a)];
+  };
+  const arc = (rad, f0, f1) => {
+    const [x1, y1] = pt(f0, rad), [x2, y2] = pt(f1, rad);
+    return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${rad} ${rad} 0 0 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+  };
+  const add = (tag, attrs, text) => {
+    const n = document.createElementNS(SVGNS, tag);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    if (text !== undefined) n.textContent = text;
+    svg.append(n);
+    return n;
+  };
+
+  const svg = document.createElementNS(SVGNS, "svg");
+  svg.setAttribute("xmlns", SVGNS);
+  svg.setAttribute("width", W + "mm");
+  svg.setAttribute("height", H + "mm");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.style.background = "#F2ECDC";
+
+  add("rect", {x: 0, y: 0, width: W, height: H, fill: "#F2ECDC"});
+  add("rect", {x: 0.15, y: 0.15, width: W - 0.3, height: H - 0.3,
+    fill: "none", stroke: "#B0A484", "stroke-width": 0.3});
+
+  if (showZones) {
+    const warn = num("warn"), good = num("good");
+    const zones = [[0, warn / maxV, "#B0402C"], [warn / maxV, good / maxV, "#C9A227"], [good / maxV, 1, "#7E9B6B"]];
+    for (const [a, b, color] of zones) {
+      const f0 = Math.max(0, Math.min(1, a)), f1 = Math.max(0, Math.min(1, b));
+      if (f1 <= f0) continue;
+      add("path", {d: arc(R + 2.4, f0, f1), fill: "none", stroke: color, "stroke-width": 1.4, opacity: 0.9});
+    }
+  }
+
+  add("path", {d: arc(R), fill: "none", stroke: "#221D16", "stroke-width": 0.35});
+
+  const minorStep = labelStep / 10;
+  for (let v = 0; v <= maxV + 1e-6; v += minorStep) {
+    const f = v / maxV;
+    const isLabel = Math.abs(v % labelStep) < 1e-6;
+    const isMid = Math.abs(v % (labelStep / 2)) < 1e-6;
+    const len = isLabel ? R * 0.115 : isMid ? R * 0.07 : R * 0.042;
+    const [x1, y1] = pt(f, R), [x2, y2] = pt(f, R - len);
+    add("line", {x1, y1, x2, y2, stroke: "#221D16", "stroke-width": isLabel ? 0.45 : isMid ? 0.28 : 0.18});
+    if (isLabel) {
+      const [tx, ty] = pt(f, R - len - R * 0.075);
+      add("text", {x: tx, y: ty, "text-anchor": "middle", fill: "#221D16",
+        "font-family": "PT Sans Narrow, Arial Narrow, sans-serif",
+        "font-size": R * 0.115, "font-weight": 700}, String(Math.round(v)));
+    }
+  }
+
+  add("text", {x: cx, y: H - H * 0.22, "text-anchor": "middle", fill: "#221D16",
+    "font-family": "PT Sans Narrow, Arial Narrow, sans-serif",
+    "font-size": R * 0.1, "letter-spacing": R * 0.035}, $("caption").value);
+  add("text", {x: cx, y: H - H * 0.08, "text-anchor": "middle", fill: "#6E6250",
+    "font-family": "PT Sans Narrow, Arial Narrow, sans-serif", "font-size": R * 0.06},
+    `предел ${Math.round(maxV)} Мбит/с`);
+
+  $("out").textContent = "";
+  $("out").append(svg);
+  window._svg = svg;
+}
+
+$("draw").addEventListener("click", draw);
+$("print").addEventListener("click", () => window.print());
+$("save").addEventListener("click", () => {
+  const data = new XMLSerializer().serializeToString(window._svg);
+  const url = URL.createObjectURL(new Blob([data], {type: "image/svg+xml"}));
+  const a = document.createElement("a");
+  a.href = url; a.download = "шкала-мегабит.svg"; a.click();
+  URL.revokeObjectURL(url);
+});
+for (const input of document.querySelectorAll("input,select")) input.addEventListener("change", draw);
+draw();
+})();
+</script>
+</body>
+</html>

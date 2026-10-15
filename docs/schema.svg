@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 540" width="940" height="540" role="img" aria-label="Схема подключения стрелочного вольтметра и светодиодов к Raspberry Pi">
+  <title>Интернетометр — схема подключения</title>
+  <desc>GPIO18 напрямую подключён к клемме 3 В стрелочного вольтметра, GND к общей клемме. GPIO17, GPIO27 и GPIO22 через резисторы 220 Ом питают зелёный, жёлтый и красный светодиоды.</desc>
+
+  <rect width="940" height="540" fill="#0E1522"/>
+
+  <g font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+
+    <!-- Заголовок -->
+    <text x="40" y="46" fill="#E2E8F0" font-size="21" font-weight="600">Интернетометр — схема подключения</text>
+    <text x="40" y="70" fill="#94A3B8" font-size="13">ШИМ с GPIO18 подаётся прямо на стрелочный прибор, рамка сама усредняет импульсы</text>
+
+    <!-- ======================= СЕКЦИЯ 1: ВОЛЬТМЕТР ======================= -->
+    <rect x="28" y="92" width="884" height="186" rx="10" fill="#111B2B" stroke="#1E293B"/>
+    <text x="48" y="118" fill="#4CC9F0" font-size="12" font-weight="600" letter-spacing="1.2">СТРЕЛОЧНЫЙ ВОЛЬТМЕТР</text>
+
+    <!-- пины -->
+    <text x="162" y="160" fill="#E2E8F0" font-size="13" text-anchor="end">GPIO18 · ШИМ</text>
+    <rect x="170" y="149" width="12" height="12" rx="2" fill="#4CC9F0"/>
+    <text x="162" y="242" fill="#E2E8F0" font-size="13" text-anchor="end">GND</text>
+    <rect x="170" y="231" width="12" height="12" rx="2" fill="#94A3B8"/>
+
+    <g stroke="#94A3B8" stroke-width="2" fill="none" stroke-linecap="round">
+      <path d="M182,155 H631"/>
+      <path d="M182,237 H643"/>
+      <path d="M643,237 V215"/>
+    </g>
+
+    <!-- Вольтметр -->
+    <circle cx="690" cy="185" r="62" fill="#0E1522" stroke="#94A3B8" stroke-width="2"/>
+    <path d="M652,160 A 48 48 0 0 1 728,160" fill="none" stroke="#475569" stroke-width="2"/>
+    <g stroke="#475569" stroke-width="2" stroke-linecap="round">
+      <path d="M655,163 l-6,-5"/><path d="M690,148 v-7"/><path d="M725,163 l6,-5"/>
+    </g>
+    <path d="M690,215 L706,163" stroke="#F87171" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <circle cx="690" cy="215" r="4" fill="#F87171"/>
+    <text x="664" y="206" fill="#E2E8F0" font-size="15" text-anchor="middle" font-weight="600">V</text>
+    <text x="690" y="268" fill="#94A3B8" font-size="11" text-anchor="middle">предел 3 В постоянного тока</text>
+
+    <!-- клеммы -->
+    <circle cx="631" cy="155" r="4" fill="#94A3B8"/>
+    <circle cx="643" cy="215" r="4" fill="#94A3B8"/>
+    <text x="625" y="142" fill="#E2E8F0" font-size="12" text-anchor="end">клемма «3 V»</text>
+    <text x="628" y="232" fill="#E2E8F0" font-size="12" text-anchor="end">общая</text>
+
+    <!-- ======================= СЕКЦИЯ 2: СВЕТОДИОДЫ ======================= -->
+    <rect x="28" y="294" width="884" height="190" rx="10" fill="#111B2B" stroke="#1E293B"/>
+    <text x="48" y="320" fill="#4CC9F0" font-size="12" font-weight="600" letter-spacing="1.2">СВЕТОДИОДЫ</text>
+
+    <g stroke="#94A3B8" stroke-width="2" fill="none" stroke-linecap="round">
+      <path d="M182,352 H256"/><path d="M304,352 H336"/><path d="M382,352 H560"/>
+      <path d="M182,398 H256"/><path d="M304,398 H336"/><path d="M382,398 H560"/>
+      <path d="M182,444 H256"/><path d="M304,444 H336"/><path d="M382,444 H560"/>
+      <path d="M560,352 V462"/>
+    </g>
+
+    <g font-size="13" fill="#E2E8F0" text-anchor="end">
+      <text x="162" y="357">GPIO17</text>
+      <text x="162" y="403">GPIO27</text>
+      <text x="162" y="449">GPIO22</text>
+    </g>
+    <rect x="170" y="346" width="12" height="12" rx="2" fill="#4ADE80"/>
+    <rect x="170" y="392" width="12" height="12" rx="2" fill="#FACC15"/>
+    <rect x="170" y="438" width="12" height="12" rx="2" fill="#F87171"/>
+
+    <g fill="#0E1522" stroke="#94A3B8" stroke-width="2">
+      <rect x="256" y="342" width="48" height="20"/>
+      <rect x="256" y="388" width="48" height="20"/>
+      <rect x="256" y="434" width="48" height="20"/>
+    </g>
+    <g fill="#94A3B8" font-size="11" text-anchor="middle">
+      <text x="280" y="336">220 Ом</text>
+      <text x="280" y="382">220 Ом</text>
+      <text x="280" y="428">220 Ом</text>
+    </g>
+
+    <g stroke-width="2" stroke-linejoin="round">
+      <g transform="translate(0,352)">
+        <path d="M336,-13 L336,13 L372,0 Z" fill="#4ADE80" stroke="#4ADE80"/>
+        <path d="M374,-14 V14" stroke="#4ADE80" stroke-linecap="round"/>
+        <g stroke="#4ADE80" stroke-width="1.6" fill="none" stroke-linecap="round">
+          <path d="M348,-18 l10,-10 M356,-28 h-6 M356,-28 v6"/>
+          <path d="M360,-18 l10,-10 M368,-28 h-6 M368,-28 v6"/>
+        </g>
+      </g>
+      <g transform="translate(0,398)">
+        <path d="M336,-13 L336,13 L372,0 Z" fill="#FACC15" stroke="#FACC15"/>
+        <path d="M374,-14 V14" stroke="#FACC15" stroke-linecap="round"/>
+        <g stroke="#FACC15" stroke-width="1.6" fill="none" stroke-linecap="round">
+          <path d="M348,-18 l10,-10 M356,-28 h-6 M356,-28 v6"/>
+          <path d="M360,-18 l10,-10 M368,-28 h-6 M368,-28 v6"/>
+        </g>
+      </g>
+      <g transform="translate(0,444)">
+        <path d="M336,-13 L336,13 L372,0 Z" fill="#F87171" stroke="#F87171"/>
+        <path d="M374,-14 V14" stroke="#F87171" stroke-linecap="round"/>
+        <g stroke="#F87171" stroke-width="1.6" fill="none" stroke-linecap="round">
+          <path d="M348,-18 l10,-10 M356,-28 h-6 M356,-28 v6"/>
+          <path d="M360,-18 l10,-10 M368,-28 h-6 M368,-28 v6"/>
+        </g>
+      </g>
+    </g>
+
+    <g font-size="13" fill="#E2E8F0">
+      <text x="580" y="357">зелёный — быстро</text>
+      <text x="580" y="403">жёлтый — средне</text>
+      <text x="580" y="449">красный — медленно</text>
+    </g>
+
+    <g fill="#94A3B8">
+      <circle cx="560" cy="352" r="4"/><circle cx="560" cy="398" r="4"/>
+    </g>
+
+    <g stroke="#94A3B8" stroke-width="2" stroke-linecap="round">
+      <path d="M543,462 H577"/>
+      <path d="M549,468 H571"/>
+      <path d="M555,474 H565"/>
+    </g>
+
+    <!-- ======================= ПРИМЕЧАНИЯ ======================= -->
+    <text x="40" y="514" fill="#94A3B8" font-size="12">Ток через прибор не превышает 1 мА, вывод Raspberry Pi отдаёт до 16 мА. Подключать только к клемме «3 V».</text>
+  </g>
+</svg>

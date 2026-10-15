@@ -1,0 +1,15 @@
+[Unit]
+Description=Маршруты интернетометра по интерфейсам
+After=network-online.target
+Wants=network-online.target
+Before=internetometer.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/home/pi/internetometer/setup-routing.sh
+# Интерфейсы поднимаются не мгновенно, даём им время получить адрес
+ExecStartPre=/bin/sleep 8
+
+[Install]
+WantedBy=multi-user.target
